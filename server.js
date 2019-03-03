@@ -113,7 +113,7 @@ router.post('/signin', function(req, res) {
                     res.json({status: 200, message: "Deleted movie", headers: req.headers, query: req.query,env: process.env.UNIQUE_KEY});
                 }
                 else{
-                    res.status(401).send({success: false, msg: 'failed your authentication, Try again.'});
+                    res.status(401).send({success: false, msg: 'Failed your authentication, Try again.'});
                 }
             }
         });
