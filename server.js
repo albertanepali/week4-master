@@ -1,10 +1,12 @@
 var express = require('express');
+var http = require('http');
 var bodyParser = require('body-parser');
 var passport = require('passport');
+var authController = require('./auth');
 var authJwtController = require('./auth_jwt');
 db = require('./db')(); //global hack
 var jwt = require('jsonwebtoken');
-var authController = require('./auth');
+
 var app = express();
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -30,8 +32,8 @@ function getJSONObject(req) {
     return json;
 }
 
-router.route('/postjwt')
-    .post(authJwtController.isAuthenticated, function (req, res) {
+router.route('/post')
+    .post(authController.isAuthenticated, function (req, res) {
             console.log(req.body);
             res = res.status(200);
             if (req.get('Content-Type')) {
@@ -43,7 +45,7 @@ router.route('/postjwt')
         }
     );
 
-router.route('/movies')
+router.route('/post')
     .post(authJwtController.isAuthenticated, function (req, res) {
             console.log(req.body);
             res = res.status(200);
@@ -51,46 +53,13 @@ router.route('/movies')
                 console.log("Content-Type: " + req.get('Content-Type'));
                 res = res.type(req.get('Content-Type'));
             }
-            var o = getJSONObject(req);
-            res.send(JSON.stringify({status: res.statusCode, msg: "Movie saved", headers: o.headers, query: req.query, host: o.key }));
+            res.send(req.body);
         }
     );
-router.route('/movies')
-    .get(authJwtController.isAuthenticated, function (req, res) {
-        console.log(req.body);
-        res = res.status(200);
-        if(req.get('Content-Type')){
-            console.log("Content-Type: " + req.get('Content-Type'));
-            res = res.type(req.get('Content-Type'));
-        }
-        var o = getJSONObject(req);
-        res.send(JSON.stringify({status: res.statusCode, msg: "Get movie", headers: o.headers, query: req.query, host: o.key }));
-    });
-router.route('/movies')
-    .put(authJwtController.isAuthenticated, function (req, res) {
-        console.log(req.body);
-        res = res.status(200);
-        if(req.get('Content-Type')){
-            console.log("Content-Type: " + req.get('Content-Type'));
-            res = res.type(req.get('Content-Type'));
-        }
-        var o = getJSONObject(req);
-        res.send(JSON.stringify({status: res.statusCode, msg: "Movie updated", headers: o.headers, query: req.query, host: o.key }));
-    });
-router.route('/movies')
-    .delete(authController.isAuthenticated, function (req, res) {
-        console.log(req.body);
-        res = res.status(200);
-        if(req.get('Content-Type')){
-            console.log("Content-Type: " + req.get('Content-Type'));
-            res = res.type(req.get('Content-Type'));
-        }
-        var o = getJSONObject(req);
-        res.send(JSON.stringify({status: res.statusCode, msg: "Movie deleted", headers: o.headers, query: req.query, host: o.key }));
-    });
+
 router.post('/signup', function(req, res) {
     if (!req.body.username || !req.body.password) {
-        res.json({success: false, msg: 'Please insert your username and password.'});
+        res.json({success: false, msg: 'Please pass username and password.'});
     } else {
         var newUser = {
             username: req.body.username,
@@ -98,16 +67,30 @@ router.post('/signup', function(req, res) {
         };
         // save the user
         db.save(newUser); //no duplicate checking
-        res.json({success: true, msg: 'You have successful created your account.'});
-
+        res.json({success: true, msg: 'You have successfully created new user.'});
     }
 });
+
+
+    .get(function (req, res) {
+        res.json({status: 200, msg: "Get movie from server", headers: req.headers, query: req.query, env: process.env.UNIQUE_KEY});
+    });
+
+
+    .post(function (req, res) {
+        res.json({status: 200, msg: "Saved movies", headers: req.headers, query: req.query, env: process.env.UNIQUE_KEY});
+    });
+
+    .put(authJwtController.isAuthenticated, function(req, res) {
+        res.json({status: 200, msg: "Updated movies", headers: req.headers, query: req.query, env: process.env.UNIQUE_KEY});
+    });
 
 router.post('/signin', function(req, res) {
 
     var user = db.findOne(req.body.username);
+
     if (!user) {
-        if (res.status(401).send({success: false, msg: 'Authentication failed. User not found.'}));
+        res.status(401).send({success: false, msg: 'Authentication failed. User not found.'});
     }
     else {
         // check if password matches
@@ -116,11 +99,27 @@ router.post('/signin', function(req, res) {
             var token = jwt.sign(userToken, process.env.UNIQUE_KEY);
             res.json({success: true, token: 'JWT ' + token});
         }
-    }
-    router.all('*', function(res, req){
-        req.json({error: 'Does not support the HTTP method'});
-    });
+        else {
+            res.status(401).send({success: false, msg: 'Not valid authentication, wrong pass.'});
+        }
+    };
+    router.route('/movies')
+        .delete(function (req, res) {
+            var user = db.findOne(req.body.username);
+            if(!user) {
+                res.status(401).send({success: false, msg: "Failed authentication, user not found"});
+            } else {
+                if(req.body.password === user.password){
+                    res.json({status: 200, message: "Deleted movie", headers: req.headers, query: req.query,env: process.env.UNIQUE_KEY});
+                }
+                else{
+                    res.status(401).send({success: false, msg: 'failed your authentication, Try again.'});
+                }
+            }
+        });
+    router.all('*', function(req, res) {res.json({error: "HTTP not in the database, Try again"}); });
 });
+
 
 app.use('/', router);
 app.listen(process.env.PORT || 8080);
