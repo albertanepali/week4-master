@@ -119,7 +119,7 @@ router.post('/signin', function(req, res) {
         });
     router.all('*', function(req, res) {res.json({error: "HTTP Address does not exist please try again!"}); });
 });
-//router.all('*', function(req, res) {res.json({error: "HTTP Address does not exist please try again!"}); });
+
 
 app.use('/', router);
 app.listen(process.env.PORT || 8080);
