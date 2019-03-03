@@ -57,6 +57,7 @@ router.route('/post')
         }
     );
 
+//User signup
 router.post('/signup', function(req, res) {
     if (!req.body.username || !req.body.password) {
 
@@ -73,6 +74,7 @@ router.post('/signup', function(req, res) {
     }
 });
 
+//User sign
 router.post('/signin', function(req, res) {
 
     var user = db.findOne(req.body.username);
@@ -89,7 +91,7 @@ router.post('/signin', function(req, res) {
             res.json({success: true, token: 'JWT ' + token});
         }
         else {
-
+            //Display an error msg for invalid password
             res.status(401).send({success: false, msg: 'Failed authentication, Invalid password, Try again!!!'});
         }
     };
@@ -97,14 +99,15 @@ router.post('/signin', function(req, res) {
         .delete(function (req, res) {
             var user = db.findOne(req.body.username);
             if(!user) {
-
+                //Display msg for not exist user
                 res.status(401).send({success: false, msg: "Failed authentication, user not able to find"});
             } else {
                 if(req.body.password === user.password){
+                    //Display msg for deleted movie
                     res.json({status: 200, message: "Delete movie", headers: req.headers, query: req.query,env: process.env.UNIQUE_KEY});
                 }
                 else{
-
+                    //Display  msg for invalid password
                     res.status(401).send({success: false, msg: 'Failed authentication, Invalid password, Try again.'});
                 }
             }
@@ -117,17 +120,19 @@ router.post('/signin', function(req, res) {
 router.route('/movies')
     .get(function (req, res) {
 
+        //Display msg for movies get from the server
         res.json({status: 200, msg: "Get the movies", headers: req.headers, query: req.query, env: process.env.UNIQUE_KEY});
     });
 
 router.route('/movies')
     .post(function (req, res) {
-
+        //Display msg for saved movies
         res.json({status: 200, msg: "Saved movie", headers: req.headers, query: req.query, env: process.env.UNIQUE_KEY});
     });
 router.route('/movies')
     .put(authJwtController.isAuthenticated, function(req, res) {
 
+            //Display msg for updated movies
         res.json({status: 200, msg: "Updated movie", headers: req.headers, query: req.query, env: process.env.UNIQUE_KEY});
     });
 
